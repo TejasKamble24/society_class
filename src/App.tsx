@@ -329,17 +329,54 @@ const VisitorDashboard = () => {
         <section id="visitor-help" className="scroll-mt-24 space-y-20">
           <SectionTitle subtitle="Solving real problems with innovative solutions.">How We Help You</SectionTitle>
           
-          {/* Problem Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Benefits Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: MapPin, title: "Long Distances", desc: "Students often travel 5-10km for quality coaching, wasting energy." },
-              { icon: ShieldCheck, title: "Safety Concerns", desc: "Late evening commutes raise safety worries for parents and students." },
-              { icon: Clock, title: "Wasted Time", desc: "Hours lost in traffic could be used for self-study, hobbies, or rest." }
+              { 
+                icon: Heart, 
+                title: "Convenience for Parents", 
+                desc: "Tuition classes happen within the society, so parents don't need to worry about daily travel arrangements." 
+              },
+              { 
+                icon: ShieldCheck, 
+                title: "Safe Learning Environment", 
+                desc: "Students attend classes inside their own residential community, ensuring safety and peace of mind for parents." 
+              },
+              { 
+                icon: Clock, 
+                title: "Time Saving", 
+                desc: "No commuting means students save valuable time that can be used for studying, sports, or relaxation." 
+              },
+              { 
+                icon: Target, 
+                title: "Better Focus on Studies", 
+                desc: "Smaller group classes help teachers give more attention to each student." 
+              },
+              { 
+                icon: Users, 
+                title: "Community Learning", 
+                desc: "Children learn with friends from the same society, making learning more engaging and comfortable." 
+              },
+              { 
+                icon: CheckCircle2, 
+                title: "Reduced Travel Stress", 
+                desc: "Students avoid traffic, long commutes, and fatigue from travelling to tuition centers." 
+              },
+              { 
+                icon: MessageSquare, 
+                title: "Easy Communication", 
+                desc: "Parents can easily interact with teachers and stay updated about their child’s progress." 
+              },
+              { 
+                icon: Building2, 
+                title: "Productive Society Spaces", 
+                desc: "Clubhouses or community halls can be used effectively for educational purposes." 
+              }
             ].map((item, i) => (
-              <Card key={i} className="border-l-4 border-l-red-500 hover:shadow-md transition-shadow">
-                <item.icon className="w-10 h-10 text-red-500 mb-4" />
+              <Card key={i} className="border-t-4 border-t-emerald-500 hover:shadow-md transition-shadow">
+                <item.icon className="w-10 h-10 text-emerald-500 mb-4" />
                 <h4 className="text-xl font-bold text-zinc-900 mb-2">{item.title}</h4>
-                <p className="text-zinc-500 leading-relaxed">{item.desc}</p>
+                <p className="text-zinc-500 text-sm leading-relaxed">{item.desc}</p>
               </Card>
             ))}
           </div>
@@ -480,7 +517,7 @@ const VisitorDashboard = () => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-zinc-500 uppercase">Call Us</p>
-                    <p className="text-lg font-bold text-zinc-900">+91 98765 43210</p>
+                    <p className="text-lg font-bold text-zinc-900">+91 90755 55238</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -495,24 +532,74 @@ const VisitorDashboard = () => {
               </div>
             </div>
             <Card className="bg-zinc-50 border-zinc-200">
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const data = {
+                  name: formData.get('name'),
+                  mobile: formData.get('mobile'),
+                  society: formData.get('society'),
+                  city: formData.get('city'),
+                  district: formData.get('district'),
+                  state: formData.get('state'),
+                  pincode: formData.get('pincode'),
+                  message: formData.get('message'),
+                };
+                
+                try {
+                  const response = await fetch('/api/enquiries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                  });
+                  if (response.ok) {
+                    alert('Enquiry sent successfully!');
+                    (e.target as HTMLFormElement).reset();
+                  } else {
+                    alert('Failed to send enquiry.');
+                  }
+                } catch (err) {
+                  console.error(err);
+                  alert('An error occurred.');
+                }
+              }}>
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">Full Name</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="John Doe" />
+                  <input name="name" type="text" required className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="John Doe" />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-zinc-700 mb-2">Email Address</label>
-                  <input type="email" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="john@example.com" />
+                  <label className="block text-sm font-bold text-zinc-700 mb-2">Mobile Number</label>
+                  <input name="mobile" type="tel" required className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="+91 90000 00000" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">City</label>
+                    <input name="city" type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Pune" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">District</label>
+                    <input name="district" type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Pune" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">State</label>
+                    <input name="state" type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Maharashtra" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-zinc-700 mb-2">Pincode</label>
+                    <input name="pincode" type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="411001" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">Society Name</label>
-                  <input type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Green Valley Apartments" />
+                  <input name="society" type="text" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all" placeholder="Green Valley Apartments" />
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-zinc-700 mb-2">Message</label>
-                  <textarea className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all h-32" placeholder="Tell us about your requirements..."></textarea>
+                  <textarea name="message" className="w-full px-4 py-3 rounded-xl border border-zinc-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all h-32" placeholder="Tell us about your requirements..."></textarea>
                 </div>
-                <button className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors">
+                <button type="submit" className="w-full py-4 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors">
                   Send Inquiry
                 </button>
               </form>
@@ -529,6 +616,26 @@ const AdminDashboard = () => {
   const [calcStudents, setCalcStudents] = useState(70);
   const [calcFee, setCalcFee] = useState(2000);
   const [calcShare, setCalcShare] = useState(20);
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchEnquiries = async () => {
+    try {
+      const response = await fetch('/api/enquiries');
+      if (response.ok) {
+        const data = await response.json();
+        setEnquiries(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchEnquiries();
+  }, []);
 
   const revenueData = useMemo(() => {
     const total = calcStudents * calcFee;
@@ -640,15 +747,15 @@ const AdminDashboard = () => {
 
             <div className="pt-6 border-t border-zinc-100 grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="p-4 bg-zinc-50 rounded-xl border border-zinc-200">
-                <p className="text-xs font-bold text-zinc-500 uppercase">Total Revenue</p>
+                <p className="text-xs font-bold text-zinc-500 uppercase">Total Monthly Revenue</p>
                 <p className="text-xl font-black text-zinc-900">₹{revenueData.total.toLocaleString()}</p>
               </div>
               <div className="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                <p className="text-xs font-bold text-emerald-600 uppercase">Society Share</p>
+                <p className="text-xs font-bold text-emerald-600 uppercase">Society Monthly Share</p>
                 <p className="text-xl font-black text-emerald-700">₹{revenueData.societyShare.toLocaleString()}</p>
               </div>
               <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                <p className="text-xs font-bold text-indigo-600 uppercase">Institute Rev</p>
+                <p className="text-xs font-bold text-indigo-600 uppercase">Institute Monthly Rev</p>
                 <p className="text-xl font-black text-indigo-700">₹{revenueData.instituteRevenue.toLocaleString()}</p>
               </div>
             </div>
@@ -667,7 +774,7 @@ const AdminDashboard = () => {
             {[
               { label: "Avg Students / Society", val: "70" },
               { label: "Societies in City (Tier 1)", val: "450+" },
-              { label: "Potential Revenue / Society", val: "₹1.4L / mo" }
+              { label: "Potential Monthly Revenue / Society", val: "₹1.4L" }
             ].map((stat, i) => (
               <div key={i} className="flex justify-between items-center pb-4 border-b border-zinc-100 last:border-0">
                 <span className="text-zinc-500 font-medium">{stat.label}</span>
@@ -719,6 +826,64 @@ const AdminDashboard = () => {
           </div>
         </Card>
       </div>
+
+      {/* Enquiries Section */}
+      <section id="admin-enquiries">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-indigo-600" />
+            <h3 className="text-2xl font-bold text-zinc-900">Recent Enquiries</h3>
+          </div>
+          <button 
+            onClick={fetchEnquiries}
+            className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
+          >
+            Refresh
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="text-center py-12 text-zinc-500">Loading enquiries...</div>
+        ) : enquiries.length === 0 ? (
+          <Card className="text-center py-12 text-zinc-500">No enquiries found.</Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4">
+            {enquiries.map((enquiry) => (
+              <Card key={enquiry.id} className="hover:border-indigo-200 transition-colors">
+                <div className="flex flex-col md:flex-row justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-lg text-zinc-900">{enquiry.name}</span>
+                      <span className="text-zinc-400">•</span>
+                      <span className="text-zinc-500">{enquiry.mobile}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-xs font-bold text-zinc-500 uppercase">
+                      {enquiry.city && <span className="px-2 py-1 bg-zinc-100 rounded-md">City: {enquiry.city}</span>}
+                      {enquiry.district && <span className="px-2 py-1 bg-zinc-100 rounded-md">Dist: {enquiry.district}</span>}
+                      {enquiry.state && <span className="px-2 py-1 bg-zinc-100 rounded-md">State: {enquiry.state}</span>}
+                      {enquiry.pincode && <span className="px-2 py-1 bg-zinc-100 rounded-md">Pin: {enquiry.pincode}</span>}
+                    </div>
+                    {enquiry.society && (
+                      <div className="flex items-center gap-2 text-sm text-indigo-600 font-bold">
+                        <Building2 className="w-4 h-4" />
+                        {enquiry.society}
+                      </div>
+                    )}
+                    <p className="text-zinc-700 bg-zinc-50 p-3 rounded-xl border border-zinc-100 italic">
+                      "{enquiry.message}"
+                    </p>
+                  </div>
+                  <div className="text-right flex flex-col justify-between">
+                    <span className="text-xs font-bold text-zinc-400 uppercase">
+                      {new Date(enquiry.created_at).toLocaleDateString()} {new Date(enquiry.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };
