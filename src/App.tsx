@@ -27,6 +27,7 @@ import {
   MessageSquare,
   Star,
   Phone,
+  Volume2,
   Globe,
   Lock,
   X
@@ -47,6 +48,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { GoogleGenAI, Modality } from "@google/genai";
 
 // --- Utility ---
 function cn(...inputs: ClassValue[]) {
@@ -57,6 +59,92 @@ function cn(...inputs: ClassValue[]) {
 type View = 'home' | 'visitor' | 'admin';
 
 // --- Components ---
+
+const HearUsAudio = () => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+
+  const generateAndPlay = async () => {
+    if (audio) {
+      if (isPlaying) {
+        audio.pause();
+        setIsPlaying(false);
+      } else {
+        audio.play();
+        setIsPlaying(true);
+      }
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const prompt = `Speak in a clear, professional Indian English accent. 
+      Script: Welcome to Society Tuition Model. We are 'Hear Us', your partners in bringing world-class education right to your doorstep. Our mission is to transform gated societies into high-performance learning hubs. By utilizing community spaces, we eliminate long commutes, ensuring safety and saving precious time for students. At 'Hear Us', we believe that every child deserves a safe and focused environment to excel. Our expert teachers provide personalized attention in small groups, fostering a community of learners. Join us in our journey to make quality education accessible, convenient, and stress-free for every family. 'Hear Us' – where learning meets community. 
+      Note: Please speak slowly and clearly to ensure the message lasts approximately 45 seconds.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: 'Kore' },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (base64Audio) {
+        const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const newAudio = new Audio(audioUrl);
+        newAudio.onended = () => setIsPlaying(false);
+        setAudio(newAudio);
+        newAudio.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error("Error generating audio:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={generateAndPlay}
+      disabled={isLoading}
+      className={cn(
+        "fixed bottom-8 right-8 z-[90] flex items-center gap-3 px-6 py-4 rounded-full shadow-2xl transition-all duration-300",
+        isPlaying ? "bg-emerald-500 text-white" : "bg-white text-zinc-900 border border-zinc-200"
+      )}
+    >
+      {isLoading ? (
+        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : isPlaying ? (
+        <div className="flex gap-1 items-center h-5">
+          {[1, 2, 3, 4].map(i => (
+            <motion.div
+              key={i}
+              animate={{ height: [8, 20, 8] }}
+              transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }}
+              className="w-1 bg-white rounded-full"
+            />
+          ))}
+        </div>
+      ) : (
+        <Volume2 className="w-5 h-5 text-emerald-500" />
+      )}
+      <span className="font-bold tracking-tight">Hear Us</span>
+    </motion.button>
+  );
+};
 
 const Card = ({ children, className, id }: { children: React.ReactNode; className?: string; id?: string; key?: React.Key }) => (
   <div id={id} className={cn("bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm", className)}>
@@ -381,77 +469,6 @@ const VisitorDashboard = () => {
             ))}
           </div>
 
-          {/* Solution Flow */}
-          <div className="bg-zinc-900 rounded-3xl p-8 md:p-12 text-white">
-            <div className="mb-12 text-center">
-              <h2 className="text-3xl font-bold">The Solution Flow</h2>
-              <p className="text-zinc-400 mt-2">A seamless, collaborative ecosystem for better learning.</p>
-            </div>
-            
-            <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative">
-              {[
-                { icon: Building2, text: "Society provides space" },
-                { icon: GraduationCap, text: "Institute provides teachers" },
-                { icon: CheckCircle2, text: "Classes happen inside" },
-                { icon: Users, text: "Students enroll" }
-              ].map((step, i, arr) => (
-                <React.Fragment key={i}>
-                  <div className="flex flex-col items-center text-center space-y-4 z-10">
-                    <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                      <step.icon className="w-8 h-8 text-white" />
-                    </div>
-                    <p className="font-semibold text-lg max-w-[150px]">{step.text}</p>
-                  </div>
-                  {i < arr.length - 1 && (
-                    <div className="hidden md:block flex-1 h-0.5 bg-zinc-700 relative">
-                      <div className="absolute right-0 -top-1.5">
-                        <ArrowRight className="w-4 h-4 text-zinc-700" />
-                      </div>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          {/* Example Scenario */}
-          <Card className="bg-zinc-50 border-zinc-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
-                <h3 className="text-2xl font-bold text-zinc-900">Real-World Impact</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-zinc-200">
-                    <span className="text-zinc-600 font-medium">Example Society Size</span>
-                    <span className="text-2xl font-bold text-emerald-600">500 Flats</span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-white rounded-xl border border-zinc-200">
-                    <span className="text-zinc-600 font-medium">Students Enrolled</span>
-                    <span className="text-2xl font-bold text-emerald-600">170+</span>
-                  </div>
-                </div>
-                <p className="text-zinc-500 leading-relaxed">
-                  By centralizing education, we've seen a 40% increase in student productivity and a 100% reduction in commute-related stress for parents.
-                </p>
-              </div>
-              <div className="bg-white p-8 rounded-2xl border border-zinc-200 shadow-sm relative">
-                <div className="absolute top-4 right-4 text-emerald-100">
-                  <GraduationCap className="w-12 h-12" />
-                </div>
-                <p className="text-lg text-zinc-700 leading-relaxed italic relative z-10">
-                  "Having tuition inside the society makes it significantly easier for parents and students. Parents don't need to worry about pick-up and drop-off, and students save valuable time that can be used for extracurriculars or additional study."
-                </p>
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <Users className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-zinc-900">Community Impact</p>
-                    <p className="text-sm text-zinc-500">Enhanced safety & convenience</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Card>
         </section>
 
         {/* Testimonials Section */}
@@ -936,6 +953,8 @@ export default function App() {
           {view === 'admin' && <AdminDashboard />}
         </motion.main>
       </AnimatePresence>
+
+      <HearUsAudio />
 
       {/* Footer */}
       <footer className="py-12 border-t border-zinc-200 bg-white">
