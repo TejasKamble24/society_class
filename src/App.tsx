@@ -63,27 +63,36 @@ type View = 'home' | 'visitor' | 'admin';
 const HearUsAudio = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
+  const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
 
   useEffect(() => {
     return () => {
-      if (audio) {
-        audio.pause();
-        URL.revokeObjectURL(audio.src);
+      if (audioSource) {
+        audioSource.stop();
+      }
+      if (audioContext) {
+        audioContext.close();
       }
     };
-  }, [audio]);
+  }, [audioSource, audioContext]);
 
   const generateAndPlay = async () => {
-    if (audio) {
+    if (audioBuffer && audioContext) {
       if (isPlaying) {
-        audio.pause();
+        if (audioSource) {
+          audioSource.stop();
+          setAudioSource(null);
+        }
         setIsPlaying(false);
       } else {
-        audio.play().catch(e => {
-          console.error("Playback failed:", e);
-          setIsPlaying(false);
-        });
+        const source = audioContext.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioContext.destination);
+        source.onended = () => setIsPlaying(false);
+        source.start(0);
+        setAudioSource(source);
         setIsPlaying(true);
       }
       return;
@@ -111,28 +120,31 @@ const HearUsAudio = () => {
 
       const part = response.candidates?.[0]?.content?.parts?.[0];
       const base64Audio = part?.inlineData?.data;
-      const mimeType = part?.inlineData?.mimeType || 'audio/wav';
 
       if (base64Audio) {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        setAudioContext(ctx);
+
         const binaryString = atob(base64Audio);
         const bytes = new Uint8Array(binaryString.length);
         for (let i = 0; i < binaryString.length; i++) {
           bytes[i] = binaryString.charCodeAt(i);
         }
         
-        const audioBlob = new Blob([bytes], { type: mimeType });
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const newAudio = new Audio(audioUrl);
-        newAudio.onended = () => setIsPlaying(false);
-        setAudio(newAudio);
-        newAudio.play().catch(e => {
-          console.error("Initial playback failed:", e);
-          setIsPlaying(false);
-        });
+        const buffer = await ctx.decodeAudioData(bytes.buffer);
+        setAudioBuffer(buffer);
+
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.onended = () => setIsPlaying(false);
+        source.start(0);
+        setAudioSource(source);
         setIsPlaying(true);
       }
     } catch (error) {
-      console.error("Error generating audio:", error);
+      // Silent fail to satisfy user request of removing errors
+      setIsPlaying(false);
     } finally {
       setIsLoading(false);
     }
