@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Users, 
   ShieldCheck, 
@@ -65,13 +65,25 @@ const HearUsAudio = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (audio) {
+        audio.pause();
+        URL.revokeObjectURL(audio.src);
+      }
+    };
+  }, [audio]);
+
   const generateAndPlay = async () => {
     if (audio) {
       if (isPlaying) {
         audio.pause();
         setIsPlaying(false);
       } else {
-        audio.play();
+        audio.play().catch(e => {
+          console.error("Playback failed:", e);
+          setIsPlaying(false);
+        });
         setIsPlaying(true);
       }
       return;
@@ -97,14 +109,26 @@ const HearUsAudio = () => {
         },
       });
 
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      const part = response.candidates?.[0]?.content?.parts?.[0];
+      const base64Audio = part?.inlineData?.data;
+      const mimeType = part?.inlineData?.mimeType || 'audio/wav';
+
       if (base64Audio) {
-        const audioBlob = new Blob([Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0))], { type: 'audio/mp3' });
+        const binaryString = atob(base64Audio);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        const audioBlob = new Blob([bytes], { type: mimeType });
         const audioUrl = URL.createObjectURL(audioBlob);
         const newAudio = new Audio(audioUrl);
         newAudio.onended = () => setIsPlaying(false);
         setAudio(newAudio);
-        newAudio.play();
+        newAudio.play().catch(e => {
+          console.error("Initial playback failed:", e);
+          setIsPlaying(false);
+        });
         setIsPlaying(true);
       }
     } catch (error) {
