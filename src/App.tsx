@@ -216,7 +216,7 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 };
 
 // --- Visitor Dashboard ---
-const VisitorDashboard = () => {
+const VisitorDashboard = ({ onEnquirySent }: { onEnquirySent: () => void }) => {
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -483,6 +483,7 @@ const VisitorDashboard = () => {
                   if (response.ok) {
                     alert('Enquiry sent successfully!');
                     (e.target as HTMLFormElement).reset();
+                    onEnquirySent();
                   } else {
                     const errorData = await response.json().catch(() => ({}));
                     alert(`Failed to send enquiry: ${errorData.error || response.statusText}`);
@@ -541,30 +542,10 @@ const VisitorDashboard = () => {
 };
 
 // --- Admin Dashboard ---
-const AdminDashboard = () => {
+const AdminDashboard = ({ enquiries, loading, onRefresh }: { enquiries: any[], loading: boolean, onRefresh: () => void }) => {
   const [calcStudents, setCalcStudents] = useState(70);
   const [calcFee, setCalcFee] = useState(2000);
   const [calcShare, setCalcShare] = useState(20);
-  const [enquiries, setEnquiries] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchEnquiries = async () => {
-    try {
-      const response = await fetch('/api/enquiries');
-      if (response.ok) {
-        const data = await response.json();
-        setEnquiries(data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    fetchEnquiries();
-  }, []);
 
   const revenueData = useMemo(() => {
     const total = calcStudents * calcFee;
@@ -764,7 +745,7 @@ const AdminDashboard = () => {
             <h3 className="text-2xl font-bold text-zinc-900">Recent Enquiries</h3>
           </div>
           <button 
-            onClick={fetchEnquiries}
+            onClick={onRefresh}
             className="text-sm font-bold text-indigo-600 hover:text-indigo-700"
           >
             Refresh
@@ -820,6 +801,26 @@ const AdminDashboard = () => {
 // --- Main App ---
 export default function App() {
   const [view, setView] = useState<View>('home');
+  const [enquiries, setEnquiries] = useState<any[]>([]);
+  const [loadingEnquiries, setLoadingEnquiries] = useState(true);
+
+  const fetchEnquiries = async () => {
+    try {
+      const response = await fetch('/api/enquiries');
+      if (response.ok) {
+        const data = await response.json();
+        setEnquiries(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingEnquiries(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEnquiries();
+  }, []);
 
   const handleNavigate = (newView: View) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -861,8 +862,14 @@ export default function App() {
           transition={{ duration: 0.3, ease: 'easeInOut' }}
         >
           {view === 'home' && <HomeView onNavigate={handleNavigate} />}
-          {view === 'visitor' && <VisitorDashboard />}
-          {view === 'admin' && <AdminDashboard />}
+          {view === 'visitor' && <VisitorDashboard onEnquirySent={fetchEnquiries} />}
+          {view === 'admin' && (
+            <AdminDashboard 
+              enquiries={enquiries} 
+              loading={loadingEnquiries} 
+              onRefresh={fetchEnquiries} 
+            />
+          )}
         </motion.main>
       </AnimatePresence>
 
