@@ -609,7 +609,8 @@ const VisitorDashboard = () => {
                     alert('Enquiry sent successfully!');
                     (e.target as HTMLFormElement).reset();
                   } else {
-                    alert('Failed to send enquiry.');
+                    const errorData = await response.json().catch(() => ({}));
+                    alert(`Failed to send enquiry: ${errorData.error || response.statusText}`);
                   }
                 } catch (err) {
                   console.error(err);

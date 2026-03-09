@@ -24,14 +24,13 @@ db.exec(`
 `);
 
 // Migration for existing databases
-try {
-  db.prepare("ALTER TABLE enquiries ADD COLUMN mobile TEXT").run();
-  db.prepare("ALTER TABLE enquiries ADD COLUMN city TEXT").run();
-  db.prepare("ALTER TABLE enquiries ADD COLUMN district TEXT").run();
-  db.prepare("ALTER TABLE enquiries ADD COLUMN state TEXT").run();
-  db.prepare("ALTER TABLE enquiries ADD COLUMN pincode TEXT").run();
-} catch (e) {
-  // Columns might already exist
+const columns = ["mobile", "city", "district", "state", "pincode"];
+for (const column of columns) {
+  try {
+    db.prepare(`ALTER TABLE enquiries ADD COLUMN ${column} TEXT`).run();
+  } catch (e) {
+    // Column might already exist
+  }
 }
 
 async function startServer() {
@@ -42,8 +41,10 @@ async function startServer() {
 
   // API Routes
   app.post("/api/enquiries", (req, res) => {
+    console.log("Received enquiry request:", req.body);
     const { name, mobile, society, city, district, state, pincode, message } = req.body;
     if (!name || !mobile) {
+      console.log("Missing required fields:", { name, mobile });
       return res.status(400).json({ error: "Name and mobile are required" });
     }
 
@@ -51,10 +52,11 @@ async function startServer() {
       const stmt = db.prepare(
         "INSERT INTO enquiries (name, mobile, society, city, district, state, pincode, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
       );
-      stmt.run(name, mobile, society, city, district, state, pincode, message);
+      const result = stmt.run(name, mobile, society, city, district, state, pincode, message);
+      console.log("Enquiry saved successfully, ID:", result.lastInsertRowid);
       res.status(201).json({ success: true });
     } catch (error) {
-      console.error("Database error:", error);
+      console.error("Database error while saving enquiry:", error);
       res.status(500).json({ error: "Failed to save enquiry" });
     }
   });
