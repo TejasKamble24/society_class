@@ -27,7 +27,6 @@ import {
   MessageSquare,
   Star,
   Phone,
-  Volume2,
   Globe,
   Lock,
   X
@@ -48,8 +47,6 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { GoogleGenAI, Modality } from "@google/genai";
-
 // --- Utility ---
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -59,128 +56,6 @@ function cn(...inputs: ClassValue[]) {
 type View = 'home' | 'visitor' | 'admin';
 
 // --- Components ---
-
-const HearUsAudio = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
-  const [audioSource, setAudioSource] = useState<AudioBufferSourceNode | null>(null);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (audioSource) {
-        audioSource.stop();
-      }
-      if (audioContext) {
-        audioContext.close();
-      }
-    };
-  }, [audioSource, audioContext]);
-
-  const generateAndPlay = async () => {
-    if (audioBuffer && audioContext) {
-      if (isPlaying) {
-        if (audioSource) {
-          audioSource.stop();
-          setAudioSource(null);
-        }
-        setIsPlaying(false);
-      } else {
-        await audioContext.resume();
-        const source = audioContext.createBufferSource();
-        source.buffer = audioBuffer;
-        source.connect(audioContext.destination);
-        source.onended = () => setIsPlaying(false);
-        source.start(0);
-        setAudioSource(source);
-        setIsPlaying(true);
-      }
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const prompt = `Speak in a clear, professional Indian English accent. 
-      Script: Welcome to Society Tuition Model. We bring world-class education to your doorstep, transforming gated societies into high-performance learning hubs. By using community spaces, we eliminate commutes and ensure safety. Our expert teachers provide personalized attention, fostering a community of learners. Join us in making quality education accessible and stress-free. Society Tuition Model – where learning meets community.`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: 'Kore' },
-            },
-          },
-        },
-      });
-
-      const part = response.candidates?.[0]?.content?.parts?.[0];
-      const base64Audio = part?.inlineData?.data;
-
-      if (base64Audio) {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        setAudioContext(ctx);
-
-        const binaryString = atob(base64Audio);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        const buffer = await ctx.decodeAudioData(bytes.buffer);
-        setAudioBuffer(buffer);
-
-        await ctx.resume();
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.onended = () => setIsPlaying(false);
-        source.start(0);
-        setAudioSource(source);
-        setIsPlaying(true);
-      }
-    } catch (error) {
-      setIsPlaying(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <motion.button
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={generateAndPlay}
-      disabled={isLoading}
-      className={cn(
-        "fixed bottom-8 right-8 z-[90] flex items-center gap-3 px-6 py-4 rounded-full shadow-2xl transition-all duration-300",
-        isPlaying ? "bg-emerald-500 text-white" : "bg-white text-zinc-900 border border-zinc-200"
-      )}
-    >
-      {isLoading ? (
-        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-      ) : isPlaying ? (
-        <div className="flex gap-1 items-center h-5">
-          {[1, 2, 3, 4].map(i => (
-            <motion.div
-              key={i}
-              animate={{ height: [8, 20, 8] }}
-              transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }}
-              className="w-1 bg-white rounded-full"
-            />
-          ))}
-        </div>
-      ) : (
-        <Volume2 className="w-5 h-5 text-emerald-500" />
-      )}
-      <span className="font-bold tracking-tight">Hear Us</span>
-    </motion.button>
-  );
-};
 
 const Card = ({ children, className, id }: { children: React.ReactNode; className?: string; id?: string; key?: React.Key }) => (
   <div id={id} className={cn("bg-white border border-zinc-200 rounded-2xl p-6 shadow-sm", className)}>
@@ -990,8 +865,6 @@ export default function App() {
           {view === 'admin' && <AdminDashboard />}
         </motion.main>
       </AnimatePresence>
-
-      <HearUsAudio />
 
       {/* Footer */}
       <footer className="py-12 border-t border-zinc-200 bg-white">
