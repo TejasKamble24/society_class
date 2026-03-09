@@ -87,6 +87,7 @@ const HearUsAudio = () => {
         }
         setIsPlaying(false);
       } else {
+        await audioContext.resume();
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
@@ -102,8 +103,7 @@ const HearUsAudio = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const prompt = `Speak in a clear, professional Indian English accent. 
-      Script: Welcome to Society Tuition Model. We are 'Hear Us', your partners in bringing world-class education right to your doorstep. Our mission is to transform gated societies into high-performance learning hubs. By utilizing community spaces, we eliminate long commutes, ensuring safety and saving precious time for students. At 'Hear Us', we believe that every child deserves a safe and focused environment to excel. Our expert teachers provide personalized attention in small groups, fostering a community of learners. Join us in our journey to make quality education accessible, convenient, and stress-free for every family. 'Hear Us' – where learning meets community. 
-      Note: Please speak slowly and clearly to ensure the message lasts approximately 45 seconds.`;
+      Script: Welcome to Society Tuition Model. We bring world-class education to your doorstep, transforming gated societies into high-performance learning hubs. By using community spaces, we eliminate commutes and ensure safety. Our expert teachers provide personalized attention, fostering a community of learners. Join us in making quality education accessible and stress-free. Society Tuition Model – where learning meets community.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
@@ -134,6 +134,7 @@ const HearUsAudio = () => {
         const buffer = await ctx.decodeAudioData(bytes.buffer);
         setAudioBuffer(buffer);
 
+        await ctx.resume();
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(ctx.destination);
@@ -143,7 +144,6 @@ const HearUsAudio = () => {
         setIsPlaying(true);
       }
     } catch (error) {
-      // Silent fail to satisfy user request of removing errors
       setIsPlaying(false);
     } finally {
       setIsLoading(false);
