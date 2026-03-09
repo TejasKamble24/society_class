@@ -542,7 +542,7 @@ const VisitorDashboard = ({ onEnquirySent }: { onEnquirySent: () => void }) => {
 };
 
 // --- Admin Dashboard ---
-const AdminDashboard = ({ enquiries, loading, onRefresh }: { enquiries: any[], loading: boolean, onRefresh: () => void }) => {
+const AdminDashboard = ({ enquiries, loading, onRefresh, dbStatus }: { enquiries: any[], loading: boolean, onRefresh: () => void, dbStatus: any }) => {
   const [calcStudents, setCalcStudents] = useState(70);
   const [calcFee, setCalcFee] = useState(2000);
   const [calcShare, setCalcShare] = useState(20);
@@ -577,6 +577,15 @@ const AdminDashboard = ({ enquiries, loading, onRefresh }: { enquiries: any[], l
           <TrendingUp className="w-5 h-5" />
           Growth Mode Active
         </div>
+        {dbStatus && (
+          <div className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl font-bold border text-xs uppercase tracking-widest",
+            dbStatus.database === 'supabase' ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-700 border-amber-100"
+          )}>
+            <div className={cn("w-2 h-2 rounded-full", dbStatus.database === 'supabase' ? "bg-emerald-500" : "bg-amber-500")} />
+            DB: {dbStatus.database}
+          </div>
+        )}
       </div>
 
       {/* Market Data & Charts */}
@@ -803,23 +812,41 @@ export default function App() {
   const [view, setView] = useState<View>('home');
   const [enquiries, setEnquiries] = useState<any[]>([]);
   const [loadingEnquiries, setLoadingEnquiries] = useState(true);
+  const [dbStatus, setDbStatus] = useState<{ status: string, database: string } | null>(null);
 
   const fetchEnquiries = async () => {
+    console.log('Fetching enquiries...');
     try {
       const response = await fetch('/api/enquiries');
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched enquiries:', data);
         setEnquiries(data);
+      } else {
+        console.error('Failed to fetch enquiries:', response.statusText);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching enquiries:', err);
     } finally {
       setLoadingEnquiries(false);
     }
   };
 
+  const checkHealth = async () => {
+    try {
+      const response = await fetch('/api/health');
+      if (response.ok) {
+        const data = await response.json();
+        setDbStatus(data);
+      }
+    } catch (err) {
+      console.error('Health check failed:', err);
+    }
+  };
+
   useEffect(() => {
     fetchEnquiries();
+    checkHealth();
   }, []);
 
   const handleNavigate = (newView: View) => {
@@ -868,6 +895,7 @@ export default function App() {
               enquiries={enquiries} 
               loading={loadingEnquiries} 
               onRefresh={fetchEnquiries} 
+              dbStatus={dbStatus}
             />
           )}
         </motion.main>
